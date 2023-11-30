@@ -1,7 +1,8 @@
 import time
 import os
 import random
-from PIL import Image, ImageSequence
+import logging
+from PIL import Image
 from moviepy.editor import VideoFileClip
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
