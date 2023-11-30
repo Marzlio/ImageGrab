@@ -17,6 +17,7 @@ Before you begin, ensure you have:
 You can install these packages using pip:
 ```bash
 pip install moviepy Pillow watchdog
+```bash
 
 Installation
 
