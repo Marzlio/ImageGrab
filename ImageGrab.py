@@ -9,22 +9,24 @@ from watchdog.events import FileSystemEventHandler
 
 # Configuration class
 class Config:
-    def __init__(self, use_full_path=False):
-        self.use_full_path = use_full_path
-        self.folder_to_monitor = 'V:\\Videos' if use_full_path else 'Videos'
-        self.main_screenshots_dir = 'V:\\screenshots' if use_full_path else 'screenshots'
+    def __init__(self, environment='Test'):
+        if environment == 'Live':
+            self.folder_to_monitor = 'V:\\Videos'
+            self.main_screenshots_dir = 'V:\\screenshots'
+        else:
+            self.folder_to_monitor = 'Videos'
+            self.main_screenshots_dir = 'screenshots'
+
+        # Common configurations
         self.target_size = (420, 560)
         self.number_of_images = 20
         self.gif_speed = 100
         self.start_time = 300
         self.number_of_gif_images = 10
         self.create_gif_enabled = True
+        self.delete_original = False
         self.supported_file_types = ['.mp4', '.avi', '.mov']
         self.file_ready_wait = 20  # Wait time in seconds
-
-# For test environment with relative path
-#config_test = Config(use_full_path=True)
-config_test = Config(use_full_path=False)
 
 def extract_frames(movie_path, config, resize_image=True):
     clip = VideoFileClip(movie_path)
@@ -65,12 +67,16 @@ class NewFileHandler(FileSystemEventHandler):
 
     def handle_new_video(self, file_path):
         logging.info(f"New video detected: {file_path}")
-        # Wait for a configurable amount of time before processing the video
         time.sleep(self.config.file_ready_wait)
         try:
             images, movie_name = extract_frames(file_path, self.config, resize_image=False)
             if self.config.create_gif_enabled:
                 create_gif(images, movie_name, self.config)
+            
+            if self.config.delete_original:
+                os.remove(file_path)
+                logging.info(f"Deleted original video file: {file_path}")
+
         except Exception as e:
             logging.error(f"Error processing video {file_path}: {e}")
 
@@ -87,6 +93,8 @@ def monitor_folder(path_to_watch, config):
         observer.stop()
     observer.join()
 
-# For test environment
-monitor_folder(config_test.folder_to_monitor, config_test)
-#monitor_folder(config_live.folder_to_monitor)
+# Configurations for test or live environment
+config = Config(environment='Test')  # Change to 'Live' for live environment
+
+# Start monitoring
+monitor_folder(config.folder_to_monitor, config)
