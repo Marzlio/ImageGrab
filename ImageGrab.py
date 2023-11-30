@@ -22,11 +22,8 @@ class Config:
         self.supported_file_types = ['.mp4', '.avi', '.mov']
         self.file_ready_wait = 20  # Wait time in seconds
 
-# Usage
-# For live environment with full path
-# config_live = Config(use_full_path=True)
-
 # For test environment with relative path
+#config_test = Config(use_full_path=True)
 config_test = Config(use_full_path=False)
 
 def extract_frames(movie_path, config, resize_image=True):
@@ -59,24 +56,27 @@ def create_gif(images, movie_name, config):
     frames[0].save(gif_path, format='GIF', append_images=frames[1:], save_all=True, duration=config.gif_speed, loop=0)
 
 class NewFileHandler(FileSystemEventHandler):
+    def __init__(self, config):
+        self.config = config
+
     def on_created(self, event):
-        if not event.is_directory and any(event.src_path.endswith(ext) for ext in config.supported_file_types):
+        if not event.is_directory and any(event.src_path.endswith(ext) for ext in self.config.supported_file_types):
             self.handle_new_video(event.src_path)
 
     def handle_new_video(self, file_path):
         logging.info(f"New video detected: {file_path}")
         # Wait for a configurable amount of time before processing the video
-        time.sleep(config.file_ready_wait)  
+        time.sleep(self.config.file_ready_wait)
         try:
-            images, movie_name = extract_frames(file_path, config, resize_image=False)
-            if config.create_gif_enabled:
-                create_gif(images, movie_name, config)
+            images, movie_name = extract_frames(file_path, self.config, resize_image=False)
+            if self.config.create_gif_enabled:
+                create_gif(images, movie_name, self.config)
         except Exception as e:
             logging.error(f"Error processing video {file_path}: {e}")
 
-def monitor_folder(path_to_watch):
+def monitor_folder(path_to_watch, config):
     logging.basicConfig(level=logging.INFO)
-    event_handler = NewFileHandler()
+    event_handler = NewFileHandler(config)
     observer = Observer()
     observer.schedule(event_handler, path_to_watch, recursive=False)
     observer.start()
@@ -87,9 +87,6 @@ def monitor_folder(path_to_watch):
         observer.stop()
     observer.join()
 
-
-# For live environment
-#onitor_folder(config_live.folder_to_monitor)
-
 # For test environment
-monitor_folder(config_test.folder_to_monitor)
+monitor_folder(config_test.folder_to_monitor, config_test)
+#monitor_folder(config_live.folder_to_monitor)
