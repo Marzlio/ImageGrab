@@ -23,7 +23,8 @@ pip install moviepy Pillow watchdog
 
 Clone this repository:
 ```bash
-git clone https://github.com/emediaholdings/imagegrab.git
+git clone https://github.com/Marzlio/ImageGrab.git
+
 ```
 Navigate to the cloned repository:
 ```bash
