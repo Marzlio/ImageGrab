@@ -12,10 +12,10 @@ class Config:
     def __init__(self, environment='Test'):
         if environment == 'Live':
             self.folder_to_monitor = 'V:\\Videos'
-            self.main_screenshots_dir = 'V:\\screenshots'
+            self.main_screenshots_dir = 'V:\\Screenshots'
         else:
             self.folder_to_monitor = 'Videos'
-            self.main_screenshots_dir = 'screenshots'
+            self.main_screenshots_dir = 'Screenshots'
 
         # Common configurations
         self.target_size = (420, 560)
@@ -23,34 +23,38 @@ class Config:
         self.gif_speed = 100
         self.start_time = 300
         self.number_of_gif_images = 10
-        self.create_gif_enabled = True
-        self.delete_original = False
+        self.create_gif_enabled = False
+        self.delete_original = True
         self.supported_file_types = ['.mp4', '.avi', '.mov']
         self.file_ready_wait = 20  # Wait time in seconds
 
 def extract_frames(movie_path, config, resize_image=True):
-    clip = VideoFileClip(movie_path)
-    duration = clip.duration
+    try:
+        clip = VideoFileClip(movie_path)
+        duration = clip.duration
 
-    start_time = config.start_time if config.start_time < duration else 0
-    timestamps = sorted(random.sample(range(start_time, int(duration)), config.number_of_images))
-    movie_name = os.path.splitext(os.path.basename(movie_path))[0]
-    movie_screenshots_dir = os.path.join(config.main_screenshots_dir, movie_name)
-    if not os.path.exists(movie_screenshots_dir):
-        os.makedirs(movie_screenshots_dir)
+        start_time = config.start_time if config.start_time < duration else 0
+        timestamps = sorted(random.sample(range(start_time, int(duration)), config.number_of_images))
+        movie_name = os.path.splitext(os.path.basename(movie_path))[0]
+        movie_screenshots_dir = os.path.join(config.main_screenshots_dir, movie_name)
+        if not os.path.exists(movie_screenshots_dir):
+            os.makedirs(movie_screenshots_dir)
 
-    images = []
-    for i, timestamp in enumerate(timestamps):
-        frame = clip.get_frame(timestamp)
-        img = Image.fromarray(frame)
-        if resize_image:
-            img.thumbnail(config.target_size, Image.ANTIALIAS)
+        images = []
+        for i, timestamp in enumerate(timestamps):
+            frame = clip.get_frame(timestamp)
+            img = Image.fromarray(frame)
+            if resize_image:
+                img.thumbnail(config.target_size, Image.ANTIALIAS)
 
-        save_path = os.path.join(movie_screenshots_dir, f"{movie_name}_{i+1}.jpg")
-        img.save(save_path)
-        images.append(save_path)
+            save_path = os.path.join(movie_screenshots_dir, f"{movie_name}_{i+1}.jpg")
+            img.save(save_path)
+            images.append(save_path)
 
-    return images, movie_name
+        return True, images, movie_name
+    except Exception as e:
+        logging.error(f"Error extracting frames from {movie_path}: {e}")
+        return False, [], movie_name
 
 def create_gif(images, movie_name, config):
     frames = [Image.open(image) for image in images[:config.number_of_gif_images]]
@@ -68,17 +72,17 @@ class NewFileHandler(FileSystemEventHandler):
     def handle_new_video(self, file_path):
         logging.info(f"New video detected: {file_path}")
         time.sleep(self.config.file_ready_wait)
-        try:
-            images, movie_name = extract_frames(file_path, self.config, resize_image=False)
+        success, images, movie_name = extract_frames(file_path, self.config, resize_image=False)
+        if success:
             if self.config.create_gif_enabled:
                 create_gif(images, movie_name, self.config)
-            
+
             if self.config.delete_original:
                 os.remove(file_path)
                 logging.info(f"Deleted original video file: {file_path}")
+        else:
+            logging.error("Frame extraction failed, not deleting original video.")
 
-        except Exception as e:
-            logging.error(f"Error processing video {file_path}: {e}")
 
 def monitor_folder(path_to_watch, config):
     logging.basicConfig(level=logging.INFO)
