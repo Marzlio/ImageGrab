@@ -16,6 +16,7 @@ class Config:
         self.gif_speed = 100  # milliseconds
         self.start_time = 300  # skip first 5 minutes (300 seconds)
         self.number_of_gif_images = 10
+        self.create_gif_enabled = True  # Add this line
 
 config = Config()
 
@@ -57,7 +58,8 @@ class NewFileHandler(FileSystemEventHandler):
         print(f"New video detected: {file_path}")
         time.sleep(1)
         images, movie_name = extract_frames(file_path, config, resize_image=False)
-        create_gif(images, movie_name, config)
+        if config.create_gif_enabled:  # Check the flag before creating GIF
+            create_gif(images, movie_name, config)
 
 def monitor_folder(path_to_watch):
     event_handler = NewFileHandler()
