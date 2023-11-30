@@ -9,14 +9,15 @@ from watchdog.events import FileSystemEventHandler
 # Configuration class
 class Config:
     def __init__(self):
-        self.folder_to_monitor = 'Videos'
-        self.main_screenshots_dir = 'screenshots'
+        self.folder_to_monitor = 'V:\\Videos'
+        self.main_screenshots_dir = 'V:\\screenshots'
         self.target_size = (420, 560)
         self.number_of_images = 20
-        self.gif_speed = 100  # milliseconds
-        self.start_time = 300  # skip first 5 minutes (300 seconds)
+        self.gif_speed = 100
+        self.start_time = 300
         self.number_of_gif_images = 10
-        self.create_gif_enabled = True  # Add this line
+        self.create_gif_enabled = True
+        self.supported_file_types = ['.mp4', '.avi', '.mov']
 
 config = Config()
 
@@ -51,17 +52,20 @@ def create_gif(images, movie_name, config):
 
 class NewFileHandler(FileSystemEventHandler):
     def on_created(self, event):
-        if not event.is_directory and event.src_path.endswith(('.mp4', '.avi', '.mov')):
+        if not event.is_directory and any(event.src_path.endswith(ext) for ext in config.supported_file_types):
             self.handle_new_video(event.src_path)
 
     def handle_new_video(self, file_path):
-        print(f"New video detected: {file_path}")
-        time.sleep(1)
-        images, movie_name = extract_frames(file_path, config, resize_image=False)
-        if config.create_gif_enabled:  # Check the flag before creating GIF
-            create_gif(images, movie_name, config)
+        logging.info(f"New video detected: {file_path}")
+        try:
+            images, movie_name = extract_frames(file_path, config, resize_image=False)
+            if config.create_gif_enabled:
+                create_gif(images, movie_name, config)
+        except Exception as e:
+            logging.error(f"Error processing video {file_path}: {e}")
 
 def monitor_folder(path_to_watch):
+    logging.basicConfig(level=logging.INFO)
     event_handler = NewFileHandler()
     observer = Observer()
     observer.schedule(event_handler, path_to_watch, recursive=False)
