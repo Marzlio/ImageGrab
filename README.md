@@ -19,7 +19,7 @@ You can install these packages using pip:
 pip install moviepy Pillow watchdog
 ```
 
-Installation
+## Installation
 
 Clone this repository:
 git clone https://github.com/emediaholdings/imagegrab.git
@@ -27,7 +27,7 @@ git clone https://github.com/emediaholdings/imagegrab.git
 Navigate to the cloned repository:
 cd imagegrab
 
-Configuration
+## Configuration
 Modify the Config class in the ImageGrab script to suit your needs:
 
 folder_to_monitor: The path of the folder to monitor for new video files.
@@ -38,12 +38,13 @@ gif_speed: The speed of the GIF in milliseconds.
 start_time: The time offset for starting frame extraction (in seconds).
 number_of_gif_images: The number of images to use in the GIF.
 
-Usage
+## Usage
 Copy Video Files: Place video files into the folder specified in folder_to_monitor.
 
 Run ImageGrab:
 ```bash
 python ImageGrab.py
+```
 Ensure that the script name matches the file name in your repository.
 
 - Locating Images and GIFs: The extracted images and GIFs will be located in the directory specified by main_screenshots_dir. They are organized in subfolders named after the respective video files.
@@ -57,9 +58,9 @@ The behavior of the script can be customized through the Config class:
 - GIF Creation: Adjust the GIF speed and frame count.
 - Start Time for Frame Extraction: Set a delay to skip the initial part of the video.
 
-Contributing
+## Contributing
 Contributions to this project are welcome. Please follow the standard fork and pull request workflow.
 
-License
+## License
 This project is licensed under the MIT License.
 
