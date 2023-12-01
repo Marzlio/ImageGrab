@@ -29,6 +29,7 @@ class Config:
         self.file_ready_wait = 20  # Wait time in seconds
 
 def extract_frames(movie_path, config, resize_image=True):
+    clip = None
     try:
         clip = VideoFileClip(movie_path)
         duration = clip.duration
@@ -55,6 +56,9 @@ def extract_frames(movie_path, config, resize_image=True):
     except Exception as e:
         logging.error(f"Error extracting frames from {movie_path}: {e}")
         return False, [], movie_name
+    finally:
+        if clip:
+            clip.close()
 
 def create_gif(images, movie_name, config):
     frames = [Image.open(image) for image in images[:config.number_of_gif_images]]
