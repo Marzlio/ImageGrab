@@ -26,7 +26,7 @@ class Config:
         self.create_gif_enabled = False
         self.delete_original = True
         self.supported_file_types = ['.mp4', '.avi', '.mov']
-        self.file_ready_wait = 20  # Wait time in seconds
+        self.file_ready_wait = 20  # Wait time in seconds before processing a new file
 
 def extract_frames(movie_path, config, resize_image=True):
     clip = None
