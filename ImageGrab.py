@@ -50,7 +50,13 @@ def extract_frames(movie_path, config, resize_image=True):
         start_time = config.start_time if config.start_time < duration else 0
         timestamps = sorted(random.sample(range(start_time, int(duration)), config.number_of_images))
         movie_name = os.path.splitext(os.path.basename(movie_path))[0]
-        movie_screenshots_dir = os.path.join(config.main_screenshots_dir, movie_name)
+
+        # Get the relative path of the video file
+        relative_path = os.path.relpath(movie_path, config.folder_to_monitor)
+        relative_dir = os.path.dirname(relative_path)
+
+        # Create a directory for screenshots mirroring the folder structure
+        movie_screenshots_dir = os.path.join(config.main_screenshots_dir, relative_dir, movie_name)
         if not os.path.exists(movie_screenshots_dir):
             os.makedirs(movie_screenshots_dir)
 
@@ -145,7 +151,7 @@ def monitor_folder(path_to_watch, config):
     logging.basicConfig(level=logging.INFO)
     event_handler = NewFileHandler(config)
     observer = Observer()
-    observer.schedule(event_handler, path_to_watch, recursive=False)
+    observer.schedule(event_handler, path_to_watch, recursive=True)
     observer.start()
     try:
         while True:
