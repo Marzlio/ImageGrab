@@ -30,14 +30,10 @@ class Config:
         self.file_ready_wait = 20  # Wait time in seconds before processing a new file
         self.max_retries = 3  # Maximum number of retries for processing a file
         self.retry_wait = 10  # Wait time in seconds before retrying
+        self.max_concurrent_tasks = 5  # Maximum number of videos to process at the same time
+
 
 def is_file_accessible(filepath, mode='r'):
-    """
-    Check if a file is accessible for reading or writing.
-    :param filepath: Path to the file.
-    :param mode: Mode to open the file ('r' for read, 'w' for write).
-    :return: True if the file is accessible, False otherwise.
-    """
     try:
         with open(filepath, mode):
             return True
@@ -93,9 +89,11 @@ def create_gif(images, movie_name, config):
 class NewFileHandler(FileSystemEventHandler):
     def __init__(self, config):
         self.config = config
+        self.semaphore = threading.Semaphore(config.max_concurrent_tasks)  # Initialize semaphore
 
     def on_created(self, event):
         if not event.is_directory and any(event.src_path.endswith(ext) for ext in self.config.supported_file_types):
+            self.semaphore.acquire()  # Acquire a semaphore before starting the thread
             video_thread = threading.Thread(target=self.handle_new_video, args=(event.src_path,))
             video_thread.start()
 
