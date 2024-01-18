@@ -89,13 +89,27 @@ def create_gif(images, movie_name, config):
 class NewFileHandler(FileSystemEventHandler):
     def __init__(self, config):
         self.config = config
-        self.semaphore = threading.Semaphore(config.max_concurrent_tasks)  # Initialize semaphore
+        self.file_queue = Queue()
+        self.init_workers()
+
+    def init_workers(self):
+        for _ in range(self.config.max_concurrent_tasks):
+            worker = threading.Thread(target=self.process_files)
+            worker.daemon = True
+            worker.start()
 
     def on_created(self, event):
         if not event.is_directory and any(event.src_path.endswith(ext) for ext in self.config.supported_file_types):
-            self.semaphore.acquire()  # Acquire a semaphore before starting the thread
-            video_thread = threading.Thread(target=self.handle_new_video, args=(event.src_path,))
-            video_thread.start()
+            # Add a delay to ensure the file is completely written
+            time.sleep(2)
+            if os.path.getsize(event.src_path) > 0:  # Check if file is non-empty
+                self.file_queue.put(event.src_path)
+
+    def process_files(self):
+        while True:
+            file_path = self.file_queue.get()
+            self.handle_new_video(file_path)
+            self.file_queue.task_done()
 
     def handle_new_video(self, file_path):
         attempt = 0
@@ -125,6 +139,7 @@ class NewFileHandler(FileSystemEventHandler):
 
         if not success:
             logging.error(f"All retries failed for {file_path}. File not processed.")
+
 
 def monitor_folder(path_to_watch, config):
     logging.basicConfig(level=logging.INFO)
