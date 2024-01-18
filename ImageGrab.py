@@ -31,6 +31,19 @@ class Config:
         self.max_retries = 3  # Maximum number of retries for processing a file
         self.retry_wait = 10  # Wait time in seconds before retrying
 
+def is_file_accessible(filepath, mode='r'):
+    """
+    Check if a file is accessible for reading or writing.
+    :param filepath: Path to the file.
+    :param mode: Mode to open the file ('r' for read, 'w' for write).
+    :return: True if the file is accessible, False otherwise.
+    """
+    try:
+        with open(filepath, mode):
+            return True
+    except IOError:
+        return False
+    
 def extract_frames(movie_path, config, resize_image=True):
     clip = None
     try:
@@ -91,21 +104,26 @@ class NewFileHandler(FileSystemEventHandler):
         success = False
 
         while attempt < self.config.max_retries and not success:
-            logging.info(f"Attempt {attempt+1}: Processing video {file_path}")
-            time.sleep(self.config.file_ready_wait)
-            success, images, movie_name = extract_frames(file_path, self.config, resize_image=False)
+            if is_file_accessible(file_path, 'r'):
+                logging.info(f"Attempt {attempt+1}: Processing video {file_path}")
+                time.sleep(self.config.file_ready_wait)
+                success, images, movie_name = extract_frames(file_path, self.config, resize_image=False)
 
-            if success:
-                if self.config.create_gif_enabled:
-                    create_gif(images, movie_name, self.config)
+                if success:
+                    if self.config.create_gif_enabled:
+                        create_gif(images, movie_name, self.config)
 
-                if self.config.delete_original:
-                    os.remove(file_path)
-                    logging.info(f"Deleted original video file: {file_path}")
+                    if self.config.delete_original:
+                        os.remove(file_path)
+                        logging.info(f"Deleted original video file: {file_path}")
+                else:
+                    logging.error(f"Attempt {attempt+1} failed for {file_path}. Retrying...")
+                    time.sleep(self.config.retry_wait)
             else:
-                logging.error(f"Attempt {attempt+1} failed for {file_path}. Retrying...")
+                logging.info(f"File {file_path} is not accessible, waiting before retry...")
                 time.sleep(self.config.retry_wait)
-                attempt += 1
+
+            attempt += 1
 
         if not success:
             logging.error(f"All retries failed for {file_path}. File not processed.")
