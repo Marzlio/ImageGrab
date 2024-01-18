@@ -140,7 +140,6 @@ class NewFileHandler(FileSystemEventHandler):
         if not success:
             logging.error(f"All retries failed for {file_path}. File not processed.")
 
-
 def monitor_folder(path_to_watch, config):
     logging.basicConfig(level=logging.INFO)
     event_handler = NewFileHandler(config)
