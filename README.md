@@ -12,6 +12,8 @@ ImageGrab is a Python script designed to automatically monitor a specified folde
 - Options for live or test environment setups.
 - Automated deletion of original video files after processing (configurable).
 - Robust error handling and retry mechanism for failed processes.
+- Monitors a designated folder for new video files, with a focus on handling large files efficiently.
+- Enhanced retry mechanism that checks file accessibility to ensure files are fully written and not locked by other processes before processing.
 
 ## Prerequisites
 
@@ -53,14 +55,12 @@ Modify the Config class in the ImageGrab script to suit your needs:
 - `retry_wait`: Wait time before retrying a failed process.
 
 ## Usage
-Copy Video Files: Place video files into the folder specified in folder_to_monitor.
-
-Run ImageGrab:
-```bash
-python ImageGrab.py
-```
-Ensure that the script name matches the file name in your repository.
-
+- Copy video files into the `folder_to_monitor`. Ensure that files are fully copied and not open in any other application before the script processes them.
+- Run ImageGrab:
+    ```bash
+    python ImageGrab.py
+    ```
+- Ensure that the script name matches the file name in your repository.
 - Locating Images and GIFs: The extracted images and GIFs will be located in the directory specified by main_screenshots_dir. They are organized in subfolders named after the respective video files.
 
 ## Customization Options
