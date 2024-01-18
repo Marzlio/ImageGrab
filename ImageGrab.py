@@ -3,6 +3,7 @@ import os
 import random
 import logging
 import threading
+from queue import Queue
 from PIL import Image
 from moviepy.editor import VideoFileClip
 from watchdog.observers import Observer
