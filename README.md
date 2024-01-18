@@ -11,6 +11,7 @@ ImageGrab is a Python script designed to automatically monitor a specified folde
 - Configurable settings for customizing screenshot size, number of frames, GIF speed, and more.
 - Options for live or test environment setups.
 - Automated deletion of original video files after processing (configurable).
+- Robust error handling and retry mechanism for failed processes.
 
 ## Prerequisites
 
@@ -47,6 +48,9 @@ Modify the Config class in the ImageGrab script to suit your needs:
 - `number_of_gif_images`: The number of images to use in the GIF.
 - `create_gif_enabled`: Enable or disable GIF creation.
 - `delete_original`: Set to True to delete original video files after processing.
+- `file_ready_wait`: Wait time before processing a new file.
+- `max_retries`: Maximum number of retries for processing a file.
+- `retry_wait`: Wait time before retrying a failed process.
 
 ## Usage
 Copy Video Files: Place video files into the folder specified in folder_to_monitor.
@@ -68,6 +72,8 @@ The behavior of the script can be customized through the Config class:
 - GIF Creation: Adjust the GIF speed and frame count.
 - Start Time for Frame Extraction: Set a delay to skip the initial part of the video.
 - Environment Setup: Choose between 'Live' and 'Test' environments for different paths.
+- Concurrent Processing: Manage file processing in parallel threads.
+
 
 ## Contributing
 Contributions to this project are welcome. Please follow the standard fork and pull request workflow.

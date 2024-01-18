@@ -2,6 +2,7 @@ import time
 import os
 import random
 import logging
+import threading
 from PIL import Image
 from moviepy.editor import VideoFileClip
 from watchdog.observers import Observer
@@ -27,6 +28,8 @@ class Config:
         self.delete_original = True
         self.supported_file_types = ['.mp4', '.avi', '.mov']
         self.file_ready_wait = 20  # Wait time in seconds before processing a new file
+        self.max_retries = 3  # Maximum number of retries for processing a file
+        self.retry_wait = 10  # Wait time in seconds before retrying
 
 def extract_frames(movie_path, config, resize_image=True):
     clip = None
@@ -53,17 +56,26 @@ def extract_frames(movie_path, config, resize_image=True):
             images.append(save_path)
 
         return True, images, movie_name
+    except IOError as e:
+        logging.error(f"IOError while processing {movie_path}: {e}")
+        return False, [], movie_name
+    except ValueError as e:
+        logging.error(f"ValueError in processing {movie_path}: {e}")
+        return False, [], movie_name
     except Exception as e:
-        logging.error(f"Error extracting frames from {movie_path}: {e}")
+        logging.error(f"Unexpected error extracting frames from {movie_path}: {e}")
         return False, [], movie_name
     finally:
         if clip:
             clip.close()
 
 def create_gif(images, movie_name, config):
-    frames = [Image.open(image) for image in images[:config.number_of_gif_images]]
-    gif_path = os.path.join(config.main_screenshots_dir, f"{movie_name}.gif")
-    frames[0].save(gif_path, format='GIF', append_images=frames[1:], save_all=True, duration=config.gif_speed, loop=0)
+    try:
+        frames = [Image.open(image) for image in images[:config.number_of_gif_images]]
+        gif_path = os.path.join(config.main_screenshots_dir, f"{movie_name}.gif")
+        frames[0].save(gif_path, format='GIF', append_images=frames[1:], save_all=True, duration=config.gif_speed, loop=0)
+    except Exception as e:
+        logging.error(f"Error creating GIF for {movie_name}: {e}")
 
 class NewFileHandler(FileSystemEventHandler):
     def __init__(self, config):
@@ -71,22 +83,32 @@ class NewFileHandler(FileSystemEventHandler):
 
     def on_created(self, event):
         if not event.is_directory and any(event.src_path.endswith(ext) for ext in self.config.supported_file_types):
-            self.handle_new_video(event.src_path)
+            video_thread = threading.Thread(target=self.handle_new_video, args=(event.src_path,))
+            video_thread.start()
 
     def handle_new_video(self, file_path):
-        logging.info(f"New video detected: {file_path}")
-        time.sleep(self.config.file_ready_wait)
-        success, images, movie_name = extract_frames(file_path, self.config, resize_image=False)
-        if success:
-            if self.config.create_gif_enabled:
-                create_gif(images, movie_name, self.config)
+        attempt = 0
+        success = False
 
-            if self.config.delete_original:
-                os.remove(file_path)
-                logging.info(f"Deleted original video file: {file_path}")
-        else:
-            logging.error("Frame extraction failed, not deleting original video.")
+        while attempt < self.config.max_retries and not success:
+            logging.info(f"Attempt {attempt+1}: Processing video {file_path}")
+            time.sleep(self.config.file_ready_wait)
+            success, images, movie_name = extract_frames(file_path, self.config, resize_image=False)
 
+            if success:
+                if self.config.create_gif_enabled:
+                    create_gif(images, movie_name, self.config)
+
+                if self.config.delete_original:
+                    os.remove(file_path)
+                    logging.info(f"Deleted original video file: {file_path}")
+            else:
+                logging.error(f"Attempt {attempt+1} failed for {file_path}. Retrying...")
+                time.sleep(self.config.retry_wait)
+                attempt += 1
+
+        if not success:
+            logging.error(f"All retries failed for {file_path}. File not processed.")
 
 def monitor_folder(path_to_watch, config):
     logging.basicConfig(level=logging.INFO)
@@ -102,7 +124,7 @@ def monitor_folder(path_to_watch, config):
     observer.join()
 
 # Configurations for test or live environment
-config = Config(environment='Test')  # Change to 'Live' for live environment
+config = Config(environment='Live')  # Change to 'Live' for live environment
 
 # Start monitoring
 monitor_folder(config.folder_to_monitor, config)
