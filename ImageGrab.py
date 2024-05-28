@@ -46,7 +46,7 @@ def is_file_accessible(filepath, mode='r'):
 
 def save_image_with_size(img, target_size, folder_path, movie_name, index):
     img_copy = img.copy()
-    img_copy.thumbnail(target_size, Image.ANTIALIAS)
+    img_copy.thumbnail(target_size, Image.Resampling.LANCZOS)
     save_path = os.path.join(folder_path, f"{movie_name}_{index+1}.jpg")
     img_copy.save(save_path)
     return save_path
