@@ -20,7 +20,10 @@ class Config:
             self.main_screenshots_dir = 'Screenshots'
 
         # Common configurations
-        self.target_size = (420, 560)
+        self.default_size = (420, 560)
+        self.stb_size = (500, 750)
+        self.default_folder = os.path.join(self.main_screenshots_dir, 'Default')
+        self.stb_folder = os.path.join(self.main_screenshots_dir, 'STB')
         self.number_of_images = 20
         self.gif_speed = 100
         self.start_time = 300
@@ -32,7 +35,7 @@ class Config:
         self.max_retries = 3  # Maximum number of retries for processing a file
         self.retry_wait = 10  # Wait time in seconds before retrying
         self.max_concurrent_tasks = 5  # Maximum number of videos to process at the same time
-
+        self.create_two_sets_of_images = False  # Option to enable creating two sets of images
 
 def is_file_accessible(filepath, mode='r'):
     try:
@@ -40,7 +43,14 @@ def is_file_accessible(filepath, mode='r'):
             return True
     except IOError:
         return False
-    
+
+def save_image_with_size(img, target_size, folder_path, movie_name, index):
+    img_copy = img.copy()
+    img_copy.thumbnail(target_size, Image.ANTIALIAS)
+    save_path = os.path.join(folder_path, f"{movie_name}_{index+1}.jpg")
+    img_copy.save(save_path)
+    return save_path
+
 def extract_frames(movie_path, config, resize_image=True):
     clip = None
     try:
@@ -55,21 +65,27 @@ def extract_frames(movie_path, config, resize_image=True):
         relative_path = os.path.relpath(movie_path, config.folder_to_monitor)
         relative_dir = os.path.dirname(relative_path)
 
-        # Create a directory for screenshots mirroring the folder structure
-        movie_screenshots_dir = os.path.join(config.main_screenshots_dir, relative_dir, movie_name)
-        if not os.path.exists(movie_screenshots_dir):
-            os.makedirs(movie_screenshots_dir)
+        # Create directories for screenshots mirroring the folder structure
+        default_screenshots_dir = os.path.join(config.default_folder, relative_dir, movie_name)
+        if not os.path.exists(default_screenshots_dir):
+            os.makedirs(default_screenshots_dir)
+
+        if config.create_two_sets_of_images:
+            stb_screenshots_dir = os.path.join(config.stb_folder, relative_dir, movie_name)
+            if not os.path.exists(stb_screenshots_dir):
+                os.makedirs(stb_screenshots_dir)
 
         images = []
         for i, timestamp in enumerate(timestamps):
             frame = clip.get_frame(timestamp)
             img = Image.fromarray(frame)
-            if resize_image:
-                img.thumbnail(config.target_size, Image.ANTIALIAS)
 
-            save_path = os.path.join(movie_screenshots_dir, f"{movie_name}_{i+1}.jpg")
-            img.save(save_path)
-            images.append(save_path)
+            default_image_path = save_image_with_size(img, config.default_size, default_screenshots_dir, movie_name, i)
+            images.append(default_image_path)
+
+            if config.create_two_sets_of_images:
+                stb_image_path = save_image_with_size(img, config.stb_size, stb_screenshots_dir, movie_name, i)
+                images.append(stb_image_path)
 
         return True, images, movie_name
     except IOError as e:
